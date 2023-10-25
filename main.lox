@@ -1,0 +1,23 @@
+fun fibo(n) {
+   if(n<=1) return n;
+   return fibo(n-1) + fibo(n-2);
+}
+
+
+fun benchmark(fn, N) {
+    print "**************************************";
+    print "N = " + N;
+    print "---------------------------------------";
+
+    var start = clock();
+    var result = fibo(N);
+    var end = clock();
+
+    print "Time: " + (end - start) + " seconds";
+    print "Result: " + result;
+}
+
+
+benchmark(fibo, 20);
+benchmark(fibo, 30);
+benchmark(fibo, 35);
