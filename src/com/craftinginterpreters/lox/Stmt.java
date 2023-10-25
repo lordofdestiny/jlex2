@@ -110,7 +110,8 @@ abstract class Stmt {
 		final Expr expression;
 	}
 	static class Continue extends Stmt{ 
-		Continue() {
+		Continue(Token keyword) {
+			this.keyword = keyword;
 		}
 
 		 @Override
@@ -118,9 +119,11 @@ abstract class Stmt {
 			return visitor.visitContinueStmt(this);
 		}
 
+		final Token keyword;
 	}
 	static class Break extends Stmt{ 
-		Break() {
+		Break(Token keyword) {
+			this.keyword = keyword;
 		}
 
 		 @Override
@@ -128,6 +131,7 @@ abstract class Stmt {
 			return visitor.visitBreakStmt(this);
 		}
 
+		final Token keyword;
 	}
 	static class While extends Stmt{ 
 		While(Expr condition, Stmt body, Stmt forIncrement) {

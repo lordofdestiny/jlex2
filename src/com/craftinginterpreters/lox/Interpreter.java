@@ -1,12 +1,10 @@
 package com.craftinginterpreters.lox;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-
     private static class BreakException extends RuntimeException {
         BreakException() {
             super(null, null, false, false);
@@ -19,9 +17,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
-    final Environment globals = new Environment();
+    final HashMap<String, Object> globals = new HashMap<>();
+    private Environment environment;
+    private final Map<Expr, Integer> locals = new HashMap<>();
+    private final Map<Expr, Integer> slots = new HashMap<>();
 
-    private Environment environment = globals;
     private static final Object uninitialized = new Object();
 
     private static abstract class NativeFunction implements LoxCallable {
@@ -32,7 +32,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     Interpreter() {
-        globals.define("clock", new NativeFunction() {
+        globals.put("clock", new NativeFunction() {
             @Override
             public int arity() {
                 return 0;
@@ -45,7 +45,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         });
 
-        globals.define("input", new NativeFunction() {
+        globals.put("input", new NativeFunction() {
             private static final Scanner sc = new Scanner(System.in);
 
             @Override
@@ -59,7 +59,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         });
 
-        globals.define("number", new NativeFunction() {
+        globals.put("number", new NativeFunction() {
             @Override
             public int arity() {
                 return 1;
@@ -103,8 +103,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
+    public void resolve(Expr expr, int depth, int slot) {
+        locals.put(expr, depth);
+        slots.put(expr, slot);
+    }
+
     void executeBlock(List<Stmt> statements, Environment environment) {
-        Environment previous = this.environment;
+        var previous = this.environment;
         try {
             this.environment = environment;
             statements.forEach(this::execute);
@@ -150,7 +155,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         return function.call(this, arguments);
-
     }
 
     @Override
@@ -204,17 +208,33 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 checkNumberOperands(expr.operator, left, right);
                 yield (double) left % (double) right;
             }
+            case COMMA -> right;
             default -> null; // Unreachable
         };
     }
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        final var value = environment.get(expr.name);
-        if (value == uninitialized) {
-            throw new RuntimeError(expr.name, "Variable must be initialized before use.");
+        final var object = lookUpVariable(expr.name, expr);
+        if (object == uninitialized) {
+            throw new RuntimeError(expr.name, "Variable used before initialization");
         }
-        return value;
+        return object;
+    }
+
+    private Object lookUpVariable(Token name, Expr.Variable expr) {
+        final var distance = locals.get(expr);
+
+        if (distance != null) {
+            return environment.getAt(distance, slots.get(expr));
+        } else {
+            if (globals.containsKey(name.lexeme())) {
+                return globals.get(name.lexeme());
+            } else {
+                throw new RuntimeError(name,
+                        "Undefined variable '" + name.lexeme() + "'.");
+            }
+        }
     }
 
     @Override
@@ -233,7 +253,20 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         final var value = evaluate(expr.value);
-        environment.assign(expr.name, value);
+
+        final var distance = locals.get(expr);
+
+        if (distance != null) {
+            environment.assignAt(distance, slots.get(expr), value);
+        } else {
+            if (globals.containsKey(expr.name.lexeme())) {
+                globals.put(expr.name.lexeme(), value);
+            } else {
+                throw new RuntimeError(expr.name,
+                        "Undefined variable '" + expr.name.lexeme() + "'.");
+            }
+        }
+
         return value;
     }
 
@@ -263,7 +296,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitConditionalExpr(Expr.Conditional expr) {
-        return isTruthy(evaluate(expr.condition)) ? evaluate(expr.thenBranch) : evaluate(expr.elseBranch);
+        return isTruthy(evaluate(expr.condition))
+                ? evaluate(expr.thenBranch)
+                : evaluate(expr.elseBranch);
     }
 
     private void checkNumberOperand(Token operator, Object operand) {
@@ -305,7 +340,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             value = evaluate(stmt.initializer);
         }
 
-        environment.define(stmt.name.lexeme(), value);
+        define(stmt.name, value);
         return null;
     }
 
@@ -331,6 +366,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (stmt.value != null) value = evaluate(stmt.value);
         throw new Return(value);
     }
+
 
     @Override
     public Void visitBreakStmt(Stmt.Break stmt) {
@@ -366,8 +402,16 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         final var function = new LoxFunction(stmt.name.lexeme(), stmt.function, environment);
-        environment.define(stmt.name.lexeme(), function);
+        define(stmt.name, function);
         return null;
+    }
+
+    private void define(Token name, Object value) {
+        if (environment != null) {
+            environment.define(value);
+        } else {
+            globals.put(name.lexeme(), value);
+        }
     }
 
     @Override

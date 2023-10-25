@@ -63,7 +63,6 @@ public class Scanner {
             case '}' -> addToken(RIGHT_BRACE);
             case ',' -> addToken(COMMA);
             case '.' -> addToken(DOT);
-            case '-' -> addToken(MINUS);
             case '+' -> addToken(PLUS);
             case ';' -> addToken(SEMICOLON);
             case '*' -> addToken(STAR);
@@ -74,6 +73,7 @@ public class Scanner {
             case '=' -> addToken(match('=') ? EQUAL_EQUAL : EQUAL);
             case '<' -> addToken(match('=') ? LESS_EQUAL : LESS);
             case '>' -> addToken(match('=') ? GREATER_EQUAL : GREATER);
+            case '-' -> addToken(match('>') ? ARROW : MINUS);
             case '/' -> {
                 if (match('/')) {
                     while (peek() != '\n' && !isAtEnd()) advance();

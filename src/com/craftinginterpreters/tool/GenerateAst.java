@@ -30,8 +30,8 @@ public class GenerateAst {
 
         defineAst(outputDir, "Stmt", Map.of(
                 "Block", "List<Stmt> statements",
-                "Break", "",
-                "Continue", "",
+                "Break", "Token keyword",
+                "Continue", "Token keyword",
                 "Expression", "Expr expression",
                 "Function", "Token name, Expr.Function function",
                 "If", "Expr condition, Stmt thanBranch, Stmt elseBranch",

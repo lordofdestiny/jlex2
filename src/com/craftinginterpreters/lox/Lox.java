@@ -38,13 +38,14 @@ public class Lox {
             final var parser = new Parser(tokens);
             final var syntax = parser.parseRepl();
 
-            if(hadError) return;
+            if (hadError) return;
 
-            if(syntax instanceof List) {
-                interpreter.interpret((List<Stmt>) syntax);
-            }else {
-                final var result = interpreter.interpret((Expr)syntax);
-                if(result != null) {
+            if (syntax instanceof List<?>) {
+                @SuppressWarnings("unchecked") final var statements = (List<Stmt>) syntax;
+                interpreter.interpret(statements);
+            } else {
+                final var result = interpreter.interpret((Expr) syntax);
+                if (result != null) {
                     System.out.println("= " + result);
                 }
             }
@@ -60,6 +61,12 @@ public class Lox {
         final var statements = parser.parse();
 
         // Stop if there was a syntax error.
+        if (hadError) return;
+
+        final var resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+
+        // Stop if there was a resolution error
         if (hadError) return;
 
         interpreter.interpret(statements);

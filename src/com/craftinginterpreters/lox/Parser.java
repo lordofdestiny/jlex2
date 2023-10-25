@@ -1,10 +1,8 @@
 package com.craftinginterpreters.lox;
 
-import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 
@@ -88,24 +86,14 @@ class Parser {
     }
 
     private Stmt breakStatement() {
-        if (loopDepth == 0) {
-            //noinspection ThrowableNotThrown
-            error(previous(), "Must be inside a loop to use 'break'.");
-        }
-        consume(SEMICOLON, "Expect ';' after break.");
-        return new Stmt.Break();
+        final var keyword = consume(SEMICOLON, "Expect ';' after break.");
+        return new Stmt.Break(keyword);
     }
 
     private Stmt continueStatement() {
-        if (loopDepth == 0) {
-            //noinspection ThrowableNotThrown
-            error(previous(), "Must be inside a loop to use 'continue'.");
-        }
-        consume(SEMICOLON, "Expect ';' after continue.");
-        return new Stmt.Continue();
+        final var keyword = consume(SEMICOLON, "Expect ';' after continue.");
+        return new Stmt.Continue(keyword);
     }
-
-    private int loopDepth = 0;
 
     private Stmt forStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'for'");
@@ -130,30 +118,25 @@ class Parser {
         }
         consume(RIGHT_PAREN, "Expect ')' after for clauses.");
 
-        try {
-            loopDepth++;
-            Stmt body = statement();
+        Stmt body = statement();
 
-            if (increment != null) {
-                body = new Stmt.Block(
-                        Arrays.asList(
-                                body, new Stmt.Expression(increment)
-                        )
-                );
-            }
-
-            if (condition == null) condition = new Expr.Literal(true);
-            // Third parameter is used for executing the loop increment after continue
-            body = new Stmt.While(condition, body, new Stmt.Expression(increment));
-
-            if (initializer != null) body = new Stmt.Block(
-                    Arrays.asList(initializer, body)
+        if (increment != null) {
+            body = new Stmt.Block(
+                    Arrays.asList(
+                            body, new Stmt.Expression(increment)
+                    )
             );
-
-            return body;
-        } finally {
-            loopDepth--;
         }
+
+        if (condition == null) condition = new Expr.Literal(true);
+        // Third parameter is used for executing the loop increment after continue
+        body = new Stmt.While(condition, body, new Stmt.Expression(increment));
+
+        if (initializer != null) body = new Stmt.Block(
+                Arrays.asList(initializer, body)
+        );
+
+        return body;
     }
 
     private Stmt ifStatement() {
@@ -180,14 +163,9 @@ class Parser {
         consume(LEFT_PAREN, "Expect '(' after 'while'.");
         final var condition = expression();
         consume(RIGHT_PAREN, "Expect ')' after condition.");
-        try {
-            loopDepth++;
-            final var body = statement();
+        final var body = statement();
 
-            return new Stmt.While(condition, body, null);
-        } finally {
-            loopDepth--;
-        }
+        return new Stmt.While(condition, body, null);
     }
 
     private Stmt expressionStatement() {
@@ -201,8 +179,6 @@ class Parser {
 
         return new Stmt.Expression(expr);
     }
-
-    int functionDepth = 0;
 
     private Stmt.Function function(String kind) {
         final var name = consume(IDENTIFIER, "Expect " + kind + " name");
@@ -225,21 +201,20 @@ class Parser {
         }
         consume(RIGHT_PAREN, "Expect ')' after parameters.");
 
-        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
-        try {
-            functionDepth++;
+        if (match(ARROW)) {
+            final var arrow = previous();
+            final var expr = expression();
+            return new Expr.Function(parameters, List.of(
+                    new Stmt.Return(arrow, expr)
+            ));
+        } else {
+            consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
             final var body = block();
             return new Expr.Function(parameters, body);
-        } finally {
-            functionDepth--;
         }
     }
 
     private Stmt returnStatement() {
-        if (functionDepth == 0) {
-            //noinspection ThrowableNotThrown
-            error(previous(), "Must be inside a function to use 'return'.");
-        }
         final var keyword = previous();
         Expr value = null;
         if (!check(SEMICOLON)) {
