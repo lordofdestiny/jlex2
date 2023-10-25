@@ -3,6 +3,7 @@ fun fibo(n) {
    return fibo(n-1) + fibo(n-2);
 }
 
+var sub = fun(a,b) { return a - b; };
 
 fun benchmark(fn, N) {
     print "**************************************";
@@ -13,7 +14,7 @@ fun benchmark(fn, N) {
     var result = fibo(N);
     var end = clock();
 
-    print "Time: " + (end - start) + " seconds";
+    print "Time: " + sub(end, start) + " seconds";
     print "Result: " + result;
 }
 

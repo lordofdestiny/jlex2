@@ -4,7 +4,6 @@ import java.util.List;
 
 abstract class Stmt {
 	interface Visitor<R> {
-		R visitWhileStmt(While stmt);
 		R visitVarStmt(Var stmt);
 		R visitPrintStmt(Print stmt);
 		R visitIfStmt(If stmt);
@@ -14,22 +13,7 @@ abstract class Stmt {
 		R visitExpressionStmt(Expression stmt);
 		R visitContinueStmt(Continue stmt);
 		R visitBreakStmt(Break stmt);
-	}
-	static class While extends Stmt{ 
-		While(Expr condition, Stmt body, Stmt forIncrement) {
-			this.condition = condition;
-			this.body = body;
-			this.forIncrement = forIncrement;
-		}
-
-		 @Override
-		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitWhileStmt(this);
-		}
-
-		final Expr condition;
-		final Stmt body;
-		final Stmt forIncrement;
+		R visitWhileStmt(While stmt);
 	}
 	static class Var extends Stmt{ 
 		Var(Token name, Expr initializer) {
@@ -88,10 +72,9 @@ abstract class Stmt {
 		final Expr value;
 	}
 	static class Function extends Stmt{ 
-		Function(Token name, List<Token> params, List<Stmt> body) {
+		Function(Token name, Expr.Function function) {
 			this.name = name;
-			this.params = params;
-			this.body = body;
+			this.function = function;
 		}
 
 		 @Override
@@ -100,8 +83,7 @@ abstract class Stmt {
 		}
 
 		final Token name;
-		final List<Token> params;
-		final List<Stmt> body;
+		final Expr.Function function;
 	}
 	static class Block extends Stmt{ 
 		Block(List<Stmt> statements) {
@@ -146,6 +128,22 @@ abstract class Stmt {
 			return visitor.visitBreakStmt(this);
 		}
 
+	}
+	static class While extends Stmt{ 
+		While(Expr condition, Stmt body, Stmt forIncrement) {
+			this.condition = condition;
+			this.body = body;
+			this.forIncrement = forIncrement;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitWhileStmt(this);
+		}
+
+		final Expr condition;
+		final Stmt body;
+		final Stmt forIncrement;
 	}
 
 	 abstract <R> R accept(Visitor<R> visitor);

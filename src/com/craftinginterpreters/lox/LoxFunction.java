@@ -2,18 +2,20 @@ package com.craftinginterpreters.lox;
 
 import java.util.List;
 
-public class LoxFunction implements LoxCallable {
-    private final Stmt.Function declaration;
+class LoxFunction implements LoxCallable {
+    private final String name;
+    private final Expr.Function declaration;
     private final Environment closure;
 
-    LoxFunction(Stmt.Function declaration, Environment closure) {
+    LoxFunction(String name, Expr.Function declaration, Environment closure) {
+        this.name = name;
         this.closure = closure;
         this.declaration = declaration;
     }
 
     @Override
     public int arity() {
-        return declaration.params.size();
+        return declaration.parameters.size();
     }
 
     @Override
@@ -21,7 +23,7 @@ public class LoxFunction implements LoxCallable {
         final var environment = new Environment(closure);
         for (int i = 0; i < arity(); i++) {
             environment.define(
-                    declaration.params.get(i).lexeme(),
+                    declaration.parameters.get(i).lexeme(),
                     arguments.get(i));
         }
         try {
@@ -34,6 +36,6 @@ public class LoxFunction implements LoxCallable {
 
     @Override
     public String toString() {
-        return "<fn " + declaration.name.lexeme() + ">";
+        return "<fn " + name + ">";
     }
 }

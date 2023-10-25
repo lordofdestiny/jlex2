@@ -238,6 +238,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitFunctionExpr(Expr.Function expr) {
+        return new LoxFunction(null, expr, environment);
+    }
+
+    @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
         final var right = evaluate(expr.right);
 
@@ -360,7 +365,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        final var function = new LoxFunction(stmt, environment);
+        final var function = new LoxFunction(stmt.name.lexeme(), stmt.function, environment);
         environment.define(stmt.name.lexeme(), function);
         return null;
     }

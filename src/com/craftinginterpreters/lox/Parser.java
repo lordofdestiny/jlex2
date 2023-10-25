@@ -4,6 +4,7 @@ import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 
@@ -48,7 +49,10 @@ class Parser {
 
     private Stmt declaration() {
         try {
-            if (match(FUN)) return function("function");
+            if (check(FUN) && checkNext(IDENTIFIER)) {
+                consume(FUN, null);
+                return function("function");
+            }
             if (match(VAR)) return varDeclaration();
 
             return statement();
@@ -202,6 +206,10 @@ class Parser {
 
     private Stmt.Function function(String kind) {
         final var name = consume(IDENTIFIER, "Expect " + kind + " name");
+        return new Stmt.Function(name, functionBody(kind));
+    }
+
+    private Expr.Function functionBody(String kind) {
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name");
         final var parameters = new ArrayList<Token>();
         if (!check(RIGHT_PAREN)) {
@@ -221,7 +229,7 @@ class Parser {
         try {
             functionDepth++;
             final var body = block();
-            return new Stmt.Function(name, parameters, body);
+            return new Expr.Function(parameters, body);
         } finally {
             functionDepth--;
         }
@@ -407,6 +415,7 @@ class Parser {
     @SuppressWarnings("ThrowableNotThrown")
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);
+        if (match(FUN)) return functionBody("function");
         if (match(TRUE)) return new Expr.Literal(true);
         if (match(NIL)) return new Expr.Literal(null);
 
@@ -463,6 +472,12 @@ class Parser {
     private boolean check(TokenType type) {
         if (isAtEnd()) return false;
         return peek().type() == type;
+    }
+
+    private boolean checkNext(TokenType type) {
+        if (isAtEnd()) return false;
+        if (tokens.get(current + 1).type() == EOF) return false;
+        return tokens.get(current + 1).type() == type;
     }
 
     private boolean isAtEnd() {
