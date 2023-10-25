@@ -1,3 +1,24 @@
+for(var i = 0; i < 2; i = i + 1 ) {
+    var x = 5 + 5;
+    print "Defined" + " World";
+    print x;
+}
+
+class DevonshireCream {
+    serveOn() {
+        return "Scones";
+    }
+}
+
+var value = DevonshireCream();
+print value;
+
+print "a" > "b";
+print "aa" < "bb";
+print 2 == "2";
+
+exit();
+
 fun fibo(n) {
    if(n<=1) return n;
    return fibo(n-1) + fibo(n-2);
@@ -17,5 +38,5 @@ fun benchmark(fn, N) {
 }
 
 // benchmark(fibo, 20);
-benchmark(fibo, 30);
-benchmark(fibo, 40);
+//benchmark(fibo, 30);
+//benchmark(fibo, 40);

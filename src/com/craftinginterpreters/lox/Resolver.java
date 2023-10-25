@@ -51,7 +51,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        // What happens here if it's not even defined
         if (!scopes.isEmpty() &&
             scopes.peek().containsKey(expr.name.lexeme()) &&
             scopes.peek().get(expr.name.lexeme()).state == VariableState.DECLARED) {
@@ -168,6 +167,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         resolve(stmt.statements);
 
         endScope();
+        return null;
+    }
+
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        declare(stmt.name);
+        define(stmt.name);
         return null;
     }
 

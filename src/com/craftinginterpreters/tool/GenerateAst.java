@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
+
 
 public class GenerateAst {
     public static void main(String[] args) throws IOException {
@@ -15,31 +17,40 @@ public class GenerateAst {
 
         final var outputDir = args[0];
 
-        defineAst(outputDir, "Expr", Map.of(
-                "Assign", "Token name, Expr value",
-                "Binary", "Expr left, Token operator, Expr right",
-                "Call", "Expr callee, Token paren, List<Expr> arguments",
-                "Grouping", "Expr expression",
-                "Function", "List<Token> parameters, List<Stmt> body",
-                "Literal", "Object value",
-                "Logical", "Expr left, Token operator, Expr right",
-                "Unary", "Token operator, Expr right",
-                "Variable", "Token name",
-                "Conditional", "Expr condition, Expr thenBranch, Expr elseBranch"
-        ));
+        defineAst(outputDir, "Expr", getExpressionsHashMap());
+        defineAst(outputDir, "Stmt", getStatementsHashMap());
+    }
 
-        defineAst(outputDir, "Stmt", Map.of(
-                "Block", "List<Stmt> statements",
-                "Break", "Token keyword",
-                "Continue", "Token keyword",
-                "Expression", "Expr expression",
-                "Function", "Token name, Expr.Function function",
-                "If", "Expr condition, Stmt thanBranch, Stmt elseBranch",
-                "Print", "Expr expression",
-                "Return", "Token keyword, Expr value",
-                "Var", "Token name, Expr initializer",
-                "While", "Expr condition, Stmt body, Stmt forIncrement"
-        ));
+    private static HashMap<String, String> getExpressionsHashMap() {
+        final var expressions = new HashMap<String, String>();
+        expressions.put("Assign", "Token name, Expr value");
+        expressions.put("Binary", "Expr left, Token operator, Expr right");
+        expressions.put("Call", "Expr callee, Token paren, List<Expr> arguments");
+        expressions.put("Get", "Expr object, Token name");
+        expressions.put("Grouping", "Expr expression");
+        expressions.put("Function", "List<Token> parameters, List<Stmt> body");
+        expressions.put("Literal", "Object value");
+        expressions.put("Logical", "Expr left, Token operator, Expr right");
+        expressions.put("Unary", "Token operator, Expr right");
+        expressions.put("Variable", "Token name");
+        expressions.put("Conditional", "Expr condition, Expr thenBranch, Expr elseBranch");
+        return expressions;
+    }
+
+    private static HashMap<String, String> getStatementsHashMap() {
+        final var statements = new HashMap<String, String>();
+        statements.put("Block", "List<Stmt> statements");
+        statements.put("Class", "Token name, List<Stmt.Function> methods");
+        statements.put("Break", "Token keyword");
+        statements.put("Continue", "Token keyword");
+        statements.put("Expression", "Expr expression");
+        statements.put("Function", "Token name, Expr.Function function");
+        statements.put("If", "Expr condition, Stmt thanBranch, Stmt elseBranch");
+        statements.put("Print", "Expr expression");
+        statements.put("Return", "Token keyword, Expr value");
+        statements.put("Var", "Token name, Expr initializer");
+        statements.put("While", "Expr condition, Stmt body, Stmt forIncrement");
+        return statements;
     }
 
     @SuppressWarnings("SameParameterValue")

@@ -4,56 +4,32 @@ import java.util.List;
 
 abstract class Expr {
 	interface Visitor<R> {
-		R visitUnaryExpr(Unary expr);
-		R visitVariableExpr(Variable expr);
-		R visitAssignExpr(Assign expr);
-		R visitFunctionExpr(Function expr);
-		R visitGroupingExpr(Grouping expr);
-		R visitLogicalExpr(Logical expr);
-		R visitBinaryExpr(Binary expr);
-		R visitConditionalExpr(Conditional expr);
-		R visitLiteralExpr(Literal expr);
 		R visitCallExpr(Call expr);
+		R visitFunctionExpr(Function expr);
+		R visitVariableExpr(Variable expr);
+		R visitLiteralExpr(Literal expr);
+		R visitLogicalExpr(Logical expr);
+		R visitAssignExpr(Assign expr);
+		R visitGroupingExpr(Grouping expr);
+		R visitConditionalExpr(Conditional expr);
+		R visitBinaryExpr(Binary expr);
+		R visitUnaryExpr(Unary expr);
 	}
-	static class Unary extends Expr{ 
-		Unary(Token operator, Expr right) {
-			this.operator = operator;
-			this.right = right;
+	static class Call extends Expr{ 
+		Call(Expr callee, Token paren, List<Expr> arguments) {
+			this.callee = callee;
+			this.paren = paren;
+			this.arguments = arguments;
 		}
 
 		 @Override
 		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitUnaryExpr(this);
+			return visitor.visitCallExpr(this);
 		}
 
-		final Token operator;
-		final Expr right;
-	}
-	static class Variable extends Expr{ 
-		Variable(Token name) {
-			this.name = name;
-		}
-
-		 @Override
-		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitVariableExpr(this);
-		}
-
-		final Token name;
-	}
-	static class Assign extends Expr{ 
-		Assign(Token name, Expr value) {
-			this.name = name;
-			this.value = value;
-		}
-
-		 @Override
-		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitAssignExpr(this);
-		}
-
-		final Token name;
-		final Expr value;
+		final Expr callee;
+		final Token paren;
+		final List<Expr> arguments;
 	}
 	static class Function extends Expr{ 
 		Function(List<Token> parameters, List<Stmt> body) {
@@ -69,17 +45,29 @@ abstract class Expr {
 		final List<Token> parameters;
 		final List<Stmt> body;
 	}
-	static class Grouping extends Expr{ 
-		Grouping(Expr expression) {
-			this.expression = expression;
+	static class Variable extends Expr{ 
+		Variable(Token name) {
+			this.name = name;
 		}
 
 		 @Override
 		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitGroupingExpr(this);
+			return visitor.visitVariableExpr(this);
 		}
 
-		final Expr expression;
+		final Token name;
+	}
+	static class Literal extends Expr{ 
+		Literal(Object value) {
+			this.value = value;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitLiteralExpr(this);
+		}
+
+		final Object value;
 	}
 	static class Logical extends Expr{ 
 		Logical(Expr left, Token operator, Expr right) {
@@ -97,21 +85,31 @@ abstract class Expr {
 		final Token operator;
 		final Expr right;
 	}
-	static class Binary extends Expr{ 
-		Binary(Expr left, Token operator, Expr right) {
-			this.left = left;
-			this.operator = operator;
-			this.right = right;
+	static class Assign extends Expr{ 
+		Assign(Token name, Expr value) {
+			this.name = name;
+			this.value = value;
 		}
 
 		 @Override
 		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitBinaryExpr(this);
+			return visitor.visitAssignExpr(this);
 		}
 
-		final Expr left;
-		final Token operator;
-		final Expr right;
+		final Token name;
+		final Expr value;
+	}
+	static class Grouping extends Expr{ 
+		Grouping(Expr expression) {
+			this.expression = expression;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitGroupingExpr(this);
+		}
+
+		final Expr expression;
 	}
 	static class Conditional extends Expr{ 
 		Conditional(Expr condition, Expr thenBranch, Expr elseBranch) {
@@ -129,33 +127,35 @@ abstract class Expr {
 		final Expr thenBranch;
 		final Expr elseBranch;
 	}
-	static class Literal extends Expr{ 
-		Literal(Object value) {
-			this.value = value;
+	static class Binary extends Expr{ 
+		Binary(Expr left, Token operator, Expr right) {
+			this.left = left;
+			this.operator = operator;
+			this.right = right;
 		}
 
 		 @Override
 		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitLiteralExpr(this);
+			return visitor.visitBinaryExpr(this);
 		}
 
-		final Object value;
+		final Expr left;
+		final Token operator;
+		final Expr right;
 	}
-	static class Call extends Expr{ 
-		Call(Expr callee, Token paren, List<Expr> arguments) {
-			this.callee = callee;
-			this.paren = paren;
-			this.arguments = arguments;
+	static class Unary extends Expr{ 
+		Unary(Token operator, Expr right) {
+			this.operator = operator;
+			this.right = right;
 		}
 
 		 @Override
 		 <R> R accept(Visitor<R> visitor) {
-			return visitor.visitCallExpr(this);
+			return visitor.visitUnaryExpr(this);
 		}
 
-		final Expr callee;
-		final Token paren;
-		final List<Expr> arguments;
+		final Token operator;
+		final Expr right;
 	}
 
 	 abstract <R> R accept(Visitor<R> visitor);

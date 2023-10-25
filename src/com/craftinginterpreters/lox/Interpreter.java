@@ -32,6 +32,18 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     Interpreter() {
+        globals.put("exit", new NativeFunction() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                throw new Exit();
+            }
+        });
+
         globals.put("clock", new NativeFunction() {
             @Override
             public int arity() {
@@ -83,7 +95,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     void interpret(List<Stmt> statements) {
         try {
-            statements.forEach(this::execute);
+            try {
+                statements.forEach(this::execute);
+            } catch (Exit exit) {
+                // Do nothing
+            }
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
@@ -157,28 +173,42 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return function.call(this, arguments);
     }
 
+    private Boolean handleComparison(Token operator, Double left, Double right) {
+        return switch (operator.type()) {
+            case GREATER -> left > right;
+            case GREATER_EQUAL -> left >= right;
+            case LESS -> left < right;
+            case LESS_EQUAL -> left <= right;
+            default -> null;
+        };
+    }
+
+    private boolean compareNumbersAndStrings(Token operator, Object left, Object right) {
+        if (left instanceof String && right instanceof String) {
+            return handleComparison(operator,
+                    (double) ((String) left).compareTo((String) right), 0.0);
+        }
+        if (left instanceof Double && right instanceof Double) {
+            return handleComparison(operator, (Double) left, (Double) right);
+        }
+        if (left instanceof String && right instanceof Number ||
+            left instanceof Number && right instanceof String) {
+            return handleComparison(operator,
+                    (double) left.toString().compareTo(right.toString()), 0.0
+            );
+        }
+        throw new RuntimeError(operator,
+                "Only strings or numbers are comparable");
+    }
+
     @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
         final var left = evaluate(expr.left);
         final var right = evaluate(expr.right);
 
         return switch (expr.operator.type()) {
-            case GREATER -> {
-                checkNumberOperands(expr.operator, left, right);
-                yield (double) left > (double) right;
-            }
-            case GREATER_EQUAL -> {
-                checkNumberOperands(expr.operator, left, right);
-                yield (double) left >= (double) right;
-            }
-            case LESS -> {
-                checkNumberOperands(expr.operator, left, right);
-                yield (double) left < (double) right;
-            }
-            case LESS_EQUAL -> {
-                checkNumberOperands(expr.operator, left, right);
-                yield (double) left <= (double) right;
-            }
+            case GREATER, GREATER_EQUAL,
+                    LESS, LESS_EQUAL -> compareNumbersAndStrings(expr.operator, left, right);
             case BANG_EQUAL -> !isEqual(left, right);
             case EQUAL_EQUAL -> isEqual(left, right);
             case PLUS -> {
@@ -347,6 +377,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
         executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        final var klass = new LoxClass(stmt.name.lexeme());
+        define(stmt.name, klass);
         return null;
     }
 
