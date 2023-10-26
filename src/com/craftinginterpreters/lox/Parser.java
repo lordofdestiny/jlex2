@@ -147,9 +147,7 @@ class Parser {
         // Third parameter is used for executing the loop increment after continue
         body = new Stmt.While(condition, body, new Stmt.Expression(increment));
 
-        if (initializer != null) body = new Stmt.Block(
-                Arrays.asList(initializer, body)
-        );
+        if (initializer != null) body = new Stmt.Block(Arrays.asList(initializer, body));
 
         return body;
     }
@@ -283,9 +281,10 @@ class Parser {
             final var equals = previous();
             final var value = assignment();
 
-            if (expr instanceof Expr.Variable) {
-                final var name = ((Expr.Variable) expr).name;
-                return new Expr.Assign(name, value);
+            if (expr instanceof Expr.Variable variable) {
+                return new Expr.Assign(variable.name, value);
+            } else if (expr instanceof Expr.Get get) {
+                return new Expr.Set(get.object, get.name, value);
             }
 
             //noinspection ThrowableNotThrown
@@ -377,6 +376,10 @@ class Parser {
         while (true) {
             if (match(LEFT_PAREN)) {
                 expr = finishCall(expr);
+            } else if (match(DOT)) {
+                final var name = consume(IDENTIFIER,
+                        "Expect property name after '.'");
+                expr = new Expr.Get(expr, name);
             } else {
                 break;
             }

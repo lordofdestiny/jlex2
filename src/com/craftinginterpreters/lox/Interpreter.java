@@ -95,11 +95,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     void interpret(List<Stmt> statements) {
         try {
-            try {
-                statements.forEach(this::execute);
-            } catch (Exit exit) {
-                // Do nothing
-            }
+            statements.forEach(this::execute);
+        } catch (Exit exit) {
+            // Do Nothing
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
@@ -134,7 +132,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
-    private String stringify(Object object) {
+    static String stringify(Object object) {
         if (object == null) return "nil";
 
         if (object instanceof Double) {
@@ -252,6 +250,18 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return object;
     }
 
+    @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        final var object = evaluate(expr.object);
+        if (object instanceof LoxInstance) {
+            return ((LoxInstance) object).get(expr.name);
+        }
+
+        throw new RuntimeError(expr.name,
+                "Only instances have properties"
+        );
+    }
+
     private Object lookUpVariable(Token name, Expr.Variable expr) {
         final var distance = locals.get(expr);
 
@@ -303,6 +313,21 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitFunctionExpr(Expr.Function expr) {
         return new LoxFunction(null, expr, environment);
+    }
+
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        final var object = evaluate(expr.object);
+
+        if (object instanceof LoxInstance obj) {
+
+            final var value = evaluate(expr.value);
+            obj.set(expr.name, value);
+            return value;
+        }
+
+        throw new RuntimeError(expr.name, "Only instances have fields.");
+
     }
 
     @Override

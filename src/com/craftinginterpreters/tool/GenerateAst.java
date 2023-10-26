@@ -31,6 +31,7 @@ public class GenerateAst {
         expressions.put("Function", "List<Token> parameters, List<Stmt> body");
         expressions.put("Literal", "Object value");
         expressions.put("Logical", "Expr left, Token operator, Expr right");
+        expressions.put("Set", "Expr object, Token name, Expr value");
         expressions.put("Unary", "Token operator, Expr right");
         expressions.put("Variable", "Token name");
         expressions.put("Conditional", "Expr condition, Expr thenBranch, Expr elseBranch");

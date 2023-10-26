@@ -6,7 +6,9 @@ abstract class Expr {
 	interface Visitor<R> {
 		R visitCallExpr(Call expr);
 		R visitFunctionExpr(Function expr);
+		R visitSetExpr(Set expr);
 		R visitVariableExpr(Variable expr);
+		R visitGetExpr(Get expr);
 		R visitLiteralExpr(Literal expr);
 		R visitLogicalExpr(Logical expr);
 		R visitAssignExpr(Assign expr);
@@ -45,6 +47,22 @@ abstract class Expr {
 		final List<Token> parameters;
 		final List<Stmt> body;
 	}
+	static class Set extends Expr{ 
+		Set(Expr object, Token name, Expr value) {
+			this.object = object;
+			this.name = name;
+			this.value = value;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitSetExpr(this);
+		}
+
+		final Expr object;
+		final Token name;
+		final Expr value;
+	}
 	static class Variable extends Expr{ 
 		Variable(Token name) {
 			this.name = name;
@@ -55,6 +73,20 @@ abstract class Expr {
 			return visitor.visitVariableExpr(this);
 		}
 
+		final Token name;
+	}
+	static class Get extends Expr{ 
+		Get(Expr object, Token name) {
+			this.object = object;
+			this.name = name;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitGetExpr(this);
+		}
+
+		final Expr object;
 		final Token name;
 	}
 	static class Literal extends Expr{ 
