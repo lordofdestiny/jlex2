@@ -18,7 +18,6 @@ public class Environment {
     Object getAt(int distance, int slot) {
         Environment environment = this;
         for (int i = 0; i < distance; i++) {
-            values.forEach(System.out::println);
             environment = environment.enclosing;
             assert environment != null : "Enclosing scope is null";
         }

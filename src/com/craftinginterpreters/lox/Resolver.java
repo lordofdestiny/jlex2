@@ -1,14 +1,13 @@
 package com.craftinginterpreters.lox;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private final Interpreter interpreter;
     private final Stack<Map<String, Variable>> scopes = new Stack<>();
+
+    private ClassType currentClass = ClassType.NONE;
     private FunctionType currentFunction = FunctionType.NONE;
     private LoopType currentLoop = LoopType.NONE;
 
@@ -29,13 +28,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private enum VariableState {
-        DECLARED,
-        DEFINED,
-        READ
+        DECLARED, DEFINED, READ
+    }
+
+    private enum ClassType {
+        NONE, CLASS
     }
 
     private enum FunctionType {
-        NONE, FUNCTION, METHOD
+        NONE, FUNCTION, METHOD, INITIALIZER
     }
 
     private enum LoopType {
@@ -120,6 +121,16 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitThisExpr(Expr.This expr) {
+        if (currentClass == ClassType.NONE) {
+            Lox.error(expr.keyword,
+                    "Can't use 'this' outside of a class");
+        }
+        resolveLocal(expr, expr.keyword, true);
+        return null;
+    }
+
+    @Override
     public Void visitCallExpr(Expr.Call expr) {
         resolve(expr.callee);
 
@@ -159,6 +170,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         if (stmt.value != null) {
+            if (currentFunction == FunctionType.INITIALIZER) {
+                Lox.error(stmt.keyword,
+                        "Can't return a value from an initializer");
+            }
             resolve(stmt.value);
         }
         return null;
@@ -185,13 +200,25 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        final var enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
         declare(stmt.name);
         define(stmt.name);
 
+        beginScope();
+        final var scope = scopes.peek();
+        scope.put("this", new Variable(null, null, scope.size()));
+
         for (final var method : stmt.methods) {
-            final var declaration = FunctionType.METHOD;
+            final var declaration = method.name.lexeme().equals("init")
+                    ? FunctionType.INITIALIZER
+                    : FunctionType.METHOD;
             resolveFunction(method.function, declaration);
         }
+
+        endScope();
+        currentClass = enclosingClass;
 
         return null;
     }
@@ -239,7 +266,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         final var scope = scopes.pop();
 
         scope.values().stream()
-                .filter((variable) -> variable.state == VariableState.DEFINED)
+                .filter((variable) -> variable.state == VariableState.DEFINED &&
+                                      Objects.equals(variable.name.lexeme(), "this")
+                )
                 .map((variable -> variable.name))
                 .forEach((name) ->
                         Lox.error(
@@ -296,7 +325,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     void resolveLocal(Expr expr, Token name, boolean isRead) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             final var scope = scopes.get(i);
+
             if (scope.containsKey(name.lexeme())) {
+                if (name.type() == TokenType.THIS) {
+                    scope.put("this",
+                            new Variable(name,
+                                    VariableState.DEFINED,
+                                    scope.get("this").slot));
+                }
+
                 interpreter.resolve(
                         expr,
                         scopes.size() - 1 - i,

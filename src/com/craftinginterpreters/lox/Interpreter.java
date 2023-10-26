@@ -262,7 +262,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         );
     }
 
-    private Object lookUpVariable(Token name, Expr.Variable expr) {
+    private Object lookUpVariable(Token name, Expr expr) {
+        assert expr instanceof Expr.Variable || expr instanceof Expr.This;
+
         final var distance = locals.get(expr);
 
         if (distance != null) {
@@ -312,7 +314,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitFunctionExpr(Expr.Function expr) {
-        return new LoxFunction(null, expr, environment);
+        return new LoxFunction.Lambda(expr, environment);
     }
 
     @Override
@@ -347,6 +349,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
         return expr.value;
+    }
+
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        return lookUpVariable(expr.keyword, expr);
     }
 
     @Override
@@ -410,7 +417,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         final var methods = new HashMap<String, LoxFunction>();
         for (final var method : stmt.methods) {
             final var name = method.name.lexeme();
-            final var function = new LoxFunction(name, method.function, environment);
+            final var function = new LoxFunction(
+                    name, method.function,
+                    environment, name.equals("init"));
             methods.put(name, function);
         }
         final var klass = new LoxClass(stmt.name.lexeme(), methods);
@@ -469,7 +478,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        final var function = new LoxFunction(stmt.name.lexeme(), stmt.function, environment);
+        final var function = new LoxFunction(
+                stmt.name.lexeme(), stmt.function,
+                environment, false);
         define(stmt.name, function);
         return null;
     }

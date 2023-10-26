@@ -11,12 +11,17 @@ class LoxInstance {
         this.klass = klass;
     }
 
+    LoxClass klass() {
+        return klass;
+    }
+
     Object get(Token name) {
         if (fields.containsKey(name.lexeme())) {
             return fields.get(name.lexeme());
         }
 
         return klass.findMethod(name.lexeme())
+                .map((method) -> method.bind(this))
                 .orElseThrow(() -> new RuntimeError(name,
                         "Undefined property '" + name.lexeme() + "'."));
     }

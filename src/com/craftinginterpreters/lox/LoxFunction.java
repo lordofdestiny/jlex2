@@ -3,14 +3,50 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 
 class LoxFunction implements LoxCallable {
-    private final String name;
+    protected final String name;
     private final Expr.Function declaration;
     private final Environment closure;
+    private boolean isInitializer;
 
-    LoxFunction(String name, Expr.Function declaration, Environment closure) {
+    static class Lambda extends LoxFunction {
+
+        Lambda(Expr.Function declaration, Environment closure) {
+            super(null, declaration, closure, false);
+        }
+
+        @Override
+        public String toString() {
+            return "<lambda>";
+        }
+    }
+
+    static class MethodBinding extends LoxFunction {
+        MethodBinding(String name, Expr.Function declaration,
+                      Environment closure, boolean isInitializer) {
+            super(name, declaration, closure, isInitializer);
+        }
+
+        @Override
+        public String toString() {
+            return "<method " + name + ">";
+        }
+    }
+
+
+    LoxFunction(String name, Expr.Function declaration, Environment closure, boolean isInitializer) {
+        this.isInitializer = isInitializer;
         this.name = name;
         this.closure = closure;
         this.declaration = declaration;
+    }
+
+
+    LoxFunction bind(LoxInstance instance) {
+        final var environment = new Environment(closure);
+        environment.define(instance);
+        return new LoxFunction.MethodBinding(
+                instance.klass().name + "." + name,
+                declaration, environment, isInitializer);
     }
 
     @Override
@@ -27,8 +63,13 @@ class LoxFunction implements LoxCallable {
         try {
             interpreter.executeBlock(declaration.body, environment);
         } catch (Return returnValue) {
-            return returnValue.value;
+            return isInitializer ?
+                    closure.getAt(0, 0)
+                    : returnValue.value;
         }
+
+        if (isInitializer) return closure.getAt(0, 0);
+
         return null;
     }
 

@@ -1,15 +1,12 @@
-class DevonshireCream {
-    serveOn() {
-        return "Scones";
+class Person {
+    init(name, age) {
+        this.name = name;
+        this.age = age;
     }
 }
 
-var value = DevonshireCream();
-print value;
-
-value.field = 5;
-value.field2 = "hello";
-print value;
+var person = Person("Peter", 5);
+print person;
 
 exit();
 
