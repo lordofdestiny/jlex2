@@ -35,7 +35,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private enum FunctionType {
-        NONE, FUNCTION
+        NONE, FUNCTION, METHOD
     }
 
     private enum LoopType {
@@ -187,6 +187,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitClassStmt(Stmt.Class stmt) {
         declare(stmt.name);
         define(stmt.name);
+
+        for (final var method : stmt.methods) {
+            final var declaration = FunctionType.METHOD;
+            resolveFunction(method.function, declaration);
+        }
+
         return null;
     }
 

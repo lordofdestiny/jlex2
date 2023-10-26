@@ -1,14 +1,21 @@
 package com.craftinginterpreters.lox;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 class LoxClass implements LoxCallable {
     final String name;
+    private final Map<String, LoxFunction> methods;
 
-    LoxClass(String name) {
+    LoxClass(String name, Map<String, LoxFunction> methods) {
         this.name = name;
+        this.methods = methods;
     }
 
+    Optional<LoxFunction> findMethod(String name) {
+        return Optional.ofNullable(methods.getOrDefault(name, null));
+    }
 
     @Override
     public int arity() {

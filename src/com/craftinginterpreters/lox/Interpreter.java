@@ -407,7 +407,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
-        final var klass = new LoxClass(stmt.name.lexeme());
+        final var methods = new HashMap<String, LoxFunction>();
+        for (final var method : stmt.methods) {
+            final var name = method.name.lexeme();
+            final var function = new LoxFunction(name, method.function, environment);
+            methods.put(name, function);
+        }
+        final var klass = new LoxClass(stmt.name.lexeme(), methods);
         define(stmt.name, klass);
         return null;
     }
