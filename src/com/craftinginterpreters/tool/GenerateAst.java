@@ -42,7 +42,7 @@ public class GenerateAst {
     private static HashMap<String, String> getStatementsHashMap() {
         final var statements = new HashMap<String, String>();
         statements.put("Block", "List<Stmt> statements");
-        statements.put("Class", "Token name, List<Stmt.Function> methods");
+        statements.put("Class", "Token name, List<Stmt.Function> methods, List<Stmt.Function> classMethod");
         statements.put("Break", "Token keyword");
         statements.put("Continue", "Token keyword");
         statements.put("Expression", "Expr expression");

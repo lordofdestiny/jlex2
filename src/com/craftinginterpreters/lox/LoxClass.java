@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-class LoxClass implements LoxCallable {
+class LoxClass extends LoxInstance implements LoxCallable {
     final String name;
     private final Map<String, LoxFunction> methods;
 
-    LoxClass(String name, Map<String, LoxFunction> methods) {
-        this.name = name;
+    LoxClass(LoxClass metaClass, String name, Map<String, LoxFunction> methods) {
+        super(metaClass);
+        this.name = metaClass == null
+                ? "<metaclass " + name + ">"
+                : name;
         this.methods = methods;
     }
 
@@ -35,6 +38,6 @@ class LoxClass implements LoxCallable {
 
     @Override
     public String toString() {
-        return "<class " + name + ">";
+        return klass == null ? name : "<class " + name + ">";
     }
 }

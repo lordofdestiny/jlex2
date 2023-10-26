@@ -165,7 +165,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (arguments.size() != function.arity()) {
             throw new RuntimeError(expr.paren,
                     "Expected " + function.arity() +
-                    " arguments but got" + arguments.size() + ".");
+                    " arguments but got " + arguments.size() + ".");
         }
 
         return function.call(this, arguments);
@@ -253,8 +253,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitGetExpr(Expr.Get expr) {
         final var object = evaluate(expr.object);
-        if (object instanceof LoxInstance) {
-            return ((LoxInstance) object).get(expr.name);
+        if (object instanceof LoxInstance loxInstance) {
+            Object result = loxInstance.get(expr.name);
+
+            if (result instanceof LoxFunction function &&
+                function.isGetter()) {
+                result = function.call(this, null);
+            }
+
+            return result;
         }
 
         throw new RuntimeError(expr.name,
@@ -414,6 +421,22 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        final var classMethods = new HashMap<String, LoxFunction>();
+        for (final var method : stmt.classMethod) {
+            final var function = new LoxFunction(
+                    method.name.lexeme(),
+                    method.function,
+                    environment, false);
+            classMethods.put(function.name, function);
+        }
+        final var klass = getLoxClass(stmt, classMethods);
+        define(stmt.name, klass);
+        return null;
+    }
+
+    private LoxClass getLoxClass(Stmt.Class stmt, HashMap<String, LoxFunction> classMethods) {
+        final var metaClass = new LoxClass(null, stmt.name.lexeme(), classMethods);
+
         final var methods = new HashMap<String, LoxFunction>();
         for (final var method : stmt.methods) {
             final var name = method.name.lexeme();
@@ -422,9 +445,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     environment, name.equals("init"));
             methods.put(name, function);
         }
-        final var klass = new LoxClass(stmt.name.lexeme(), methods);
-        define(stmt.name, klass);
-        return null;
+
+        return new LoxClass(metaClass, stmt.name.lexeme(), methods);
     }
 
     @Override

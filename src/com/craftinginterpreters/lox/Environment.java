@@ -1,6 +1,7 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Environment {
@@ -31,5 +32,21 @@ public class Environment {
             assert environment != null : "Enclosing scope is null";
         }
         environment.values.set(slot, value);
+    }
+
+    @Override
+    public String toString() {
+        final var builder = new StringBuilder();
+        builder.append(enclosing == null ? "{Environment}" : enclosing.toString());
+        builder.append("\n -> ");
+        builder.append("[");
+        if (!values.isEmpty()) {
+            builder.append(values.get(0));
+        }
+        for (int i = 1; i < values.size(); i++) {
+            builder.append(", ").append(values.get(i));
+        }
+        builder.append("]");
+        return builder.toString();
     }
 }

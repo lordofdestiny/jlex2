@@ -1,12 +1,25 @@
+class Math {
+   static square(n) {
+        print this;
+        return n*n;
+   }
+}
+
 class Person {
-    init(name, age) {
+    init(name, last) {
         this.name = name;
-        this.age = age;
+        this.last = last;
+    }
+
+    hello -> this.name + this.last;
+
+    age {
+        return nil;
     }
 }
 
-var person = Person("Peter", 5);
-print person;
+print Person("Petar", "Peric").hello;
+print Person(nil, nil).age;
 
 exit();
 

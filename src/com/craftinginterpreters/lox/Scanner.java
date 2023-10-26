@@ -28,6 +28,7 @@ public class Scanner {
         keywords.put("or", OR);
         keywords.put("print", PRINT);
         keywords.put("return", RETURN);
+        keywords.put("static", STATIC);
         keywords.put("super", SUPER);
         keywords.put("this", THIS);
         keywords.put("true", TRUE);

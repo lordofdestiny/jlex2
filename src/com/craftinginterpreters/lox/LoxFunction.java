@@ -6,7 +6,7 @@ class LoxFunction implements LoxCallable {
     protected final String name;
     private final Expr.Function declaration;
     private final Environment closure;
-    private boolean isInitializer;
+    private final boolean isInitializer;
 
     static class Lambda extends LoxFunction {
 
@@ -40,6 +40,9 @@ class LoxFunction implements LoxCallable {
         this.declaration = declaration;
     }
 
+    public boolean isGetter() {
+        return declaration.parameters == null;
+    }
 
     LoxFunction bind(LoxInstance instance) {
         final var environment = new Environment(closure);
@@ -57,8 +60,10 @@ class LoxFunction implements LoxCallable {
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
         final var environment = new Environment(closure);
-        for (int i = 0; i < declaration.parameters.size(); i++) {
-            environment.define(arguments.get(i));
+        if (declaration.parameters != null) {
+            for (int i = 0; i < declaration.parameters.size(); i++) {
+                environment.define(arguments.get(i));
+            }
         }
         try {
             interpreter.executeBlock(declaration.body, environment);

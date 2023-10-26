@@ -66,13 +66,14 @@ class Parser {
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
         final var methods = new ArrayList<Stmt.Function>();
+        final var classMethods = new ArrayList<Stmt.Function>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            methods.add(function("method"));
+            (match(STATIC) ? classMethods : methods).add(function("method"));
         }
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, methods, classMethods);
     }
 
     private Stmt varDeclaration() {
@@ -199,24 +200,31 @@ class Parser {
     }
 
     private Expr.Function functionBody(String kind) {
-        consume(LEFT_PAREN, "Expect '(' after " + kind + " name");
-        final var parameters = new ArrayList<Token>();
-        if (!check(RIGHT_PAREN)) {
-            do {
-                if (parameters.size() >= 255) {
-                    //noinspection ThrowableNotThrown
-                    error(peek(), "Can't have more than 255 parameters.");
-                }
-                parameters.add(
-                        consume(IDENTIFIER, "Expect parameter name")
-                );
-            } while (match(COMMA));
+
+        List<Token> parameters = null;
+        if (!kind.equals("method") || check(LEFT_PAREN)) {
+            consume(LEFT_PAREN, "Expect '(' after " + kind + " name");
+            parameters = new ArrayList<>();
+            if (!check(RIGHT_PAREN)) {
+                do {
+                    if (parameters.size() >= 255) {
+                        //noinspection ThrowableNotThrown
+                        error(peek(), "Can't have more than 255 parameters.");
+                    }
+                    parameters.add(
+                            consume(IDENTIFIER, "Expect parameter name")
+                    );
+                } while (match(COMMA));
+            }
+            consume(RIGHT_PAREN, "Expect ')' after parameters.");
         }
-        consume(RIGHT_PAREN, "Expect ')' after parameters.");
 
         if (match(ARROW)) {
             final var arrow = previous();
             final var expr = expression();
+            if (kind.equals("method")) {
+                consume(SEMICOLON, "Expect ';' after lambda getter.");
+            }
             return new Expr.Function(parameters, List.of(
                     new Stmt.Return(arrow, expr)
             ));

@@ -217,6 +217,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             resolveFunction(method.function, declaration);
         }
 
+        for (final var method : stmt.classMethod) {
+            beginScope();
+            final var staticScope = scopes.peek();
+            staticScope.put("this", new Variable(null, null, staticScope.size()));
+            resolveFunction(method.function, FunctionType.METHOD);
+            endScope();
+        }
+
         endScope();
         currentClass = enclosingClass;
 
@@ -266,9 +274,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         final var scope = scopes.pop();
 
         scope.values().stream()
-                .filter((variable) -> variable.state == VariableState.DEFINED &&
-                                      Objects.equals(variable.name.lexeme(), "this")
-                )
+                .filter((variable) -> variable.state == VariableState.DEFINED)
                 .map((variable -> variable.name))
                 .forEach((name) ->
                         Lox.error(
@@ -294,10 +300,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         final var enclosingFunction = currentFunction;
         currentFunction = type;
         beginScope();
-        function.parameters.forEach((param) -> {
-            declare(param);
-            define(param);
-        });
+        if (function.parameters != null) {
+            function.parameters.forEach((param) -> {
+                declare(param);
+                define(param);
+            });
+        }
         resolve(function.body);
         endScope();
         currentFunction = enclosingFunction;
