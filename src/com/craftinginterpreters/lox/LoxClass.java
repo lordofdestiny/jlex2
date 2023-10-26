@@ -6,10 +6,12 @@ import java.util.Optional;
 
 class LoxClass extends LoxInstance implements LoxCallable {
     final String name;
+    final LoxClass superClass;
     private final Map<String, LoxFunction> methods;
 
-    LoxClass(LoxClass metaClass, String name, Map<String, LoxFunction> methods) {
+    LoxClass(LoxClass metaClass, LoxClass superclass, String name, Map<String, LoxFunction> methods) {
         super(metaClass);
+        this.superClass = superclass;
         this.name = metaClass == null
                 ? "<metaclass " + name + ">"
                 : name;
@@ -17,7 +19,8 @@ class LoxClass extends LoxInstance implements LoxCallable {
     }
 
     Optional<LoxFunction> findMethod(String name) {
-        return Optional.ofNullable(methods.getOrDefault(name, null));
+        return Optional.ofNullable(methods.getOrDefault(name, null))
+                .or(() -> Optional.ofNullable(methods.getOrDefault(name, null)));
     }
 
     @Override

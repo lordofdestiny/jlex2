@@ -421,6 +421,18 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        Object superclass = null;
+        if (stmt.superclass != null) {
+            superclass = evaluate(stmt.superclass);
+
+            if (!(superclass instanceof LoxClass)) {
+                throw new RuntimeError(
+                        stmt.superclass.name,
+                        "Superclass must be a class."
+                );
+            }
+        }
+
         final var classMethods = new HashMap<String, LoxFunction>();
         for (final var method : stmt.classMethod) {
             final var function = new LoxFunction(
@@ -429,13 +441,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     environment, false);
             classMethods.put(function.name, function);
         }
-        final var klass = getLoxClass(stmt, classMethods);
+        final var klass = getLoxClass(stmt, superclass, classMethods);
         define(stmt.name, klass);
         return null;
     }
 
-    private LoxClass getLoxClass(Stmt.Class stmt, HashMap<String, LoxFunction> classMethods) {
-        final var metaClass = new LoxClass(null, stmt.name.lexeme(), classMethods);
+    private LoxClass getLoxClass(Stmt.Class stmt, Object superclass, HashMap<String, LoxFunction> classMethods) {
+        final var metaClass = new LoxClass(null, null, stmt.name.lexeme(), classMethods);
 
         final var methods = new HashMap<String, LoxFunction>();
         for (final var method : stmt.methods) {
@@ -446,7 +458,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             methods.put(name, function);
         }
 
-        return new LoxClass(metaClass, stmt.name.lexeme(), methods);
+        return new LoxClass(metaClass, (LoxClass) superclass, stmt.name.lexeme(), methods);
     }
 
     @Override

@@ -6,6 +6,6 @@ public record Token(TokenType type, String lexeme, Object literal, int line) {
 
     @Override
     public String toString() {
-        return MessageFormat.format("{0} {1} {2} at {3}", type, lexeme, literal, line);
+        return MessageFormat.format("{0} {1} {2}", type, lexeme, literal);
     }
 }
