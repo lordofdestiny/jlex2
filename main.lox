@@ -11,15 +11,30 @@ class Person {
         this.last = last;
     }
 
-    hello -> this.name + this.last;
+    fullName -> this.name + " " + this.last;
+}
 
-    age {
-        return nil;
+class Child < Person {
+    init(name, last, parent) {
+        super(name, last);
+        super.init(name, last);
+        this.parent = parent;
+    }
+
+    parentName -> this.parent;
+}
+
+class NestedChild < Child {
+    init(parent) {
+        super("","",parent);
+        print "TEST";
     }
 }
 
-print Person("Petar", "Peric").hello;
-print Person(nil, nil).age;
+var parent = Person("Petar", "Peric");
+var child = Child("Sima", "Peric", parent);
+print child;
+print NestedChild(child);
 
 exit();
 
@@ -41,6 +56,6 @@ fun benchmark(fn, N) {
     print "Result: " + result;
 }
 
-// benchmark(fibo, 20);
-//benchmark(fibo, 30);
-//benchmark(fibo, 40);
+benchmark(fibo, 20);
+benchmark(fibo, 30);
+benchmark(fibo, 40);

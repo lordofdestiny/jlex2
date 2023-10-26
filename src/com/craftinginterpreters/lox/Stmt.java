@@ -8,6 +8,7 @@ abstract class Stmt {
 		R visitPrintStmt(Print stmt);
 		R visitReturnStmt(Return stmt);
 		R visitExpressionStmt(Expression stmt);
+		R visitInitSuperStmt(InitSuper stmt);
 		R visitVarStmt(Var stmt);
 		R visitBreakStmt(Break stmt);
 		R visitBlockStmt(Block stmt);
@@ -67,6 +68,20 @@ abstract class Stmt {
 		}
 
 		final Expr expression;
+	}
+	static class InitSuper extends Stmt{ 
+		InitSuper(Token keyword, Expr.Call initSuper) {
+			this.keyword = keyword;
+			this.initSuper = initSuper;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitInitSuperStmt(this);
+		}
+
+		final Token keyword;
+		final Expr.Call initSuper;
 	}
 	static class Var extends Stmt{ 
 		Var(Token name, Expr initializer) {

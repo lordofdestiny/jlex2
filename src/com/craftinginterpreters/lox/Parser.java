@@ -102,6 +102,10 @@ class Parser {
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
         if (match(RETURN)) return returnStatement();
+        if (check(SUPER) && checkNext(LEFT_PAREN)) {
+            consume(SUPER, null);
+            return superStatement();
+        }
         if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -187,6 +191,18 @@ class Parser {
         final var body = statement();
 
         return new Stmt.While(condition, body, null);
+    }
+
+    private Stmt superStatement() {
+        final var keyword = previous();
+        consume(LEFT_PAREN, "Expect '(' for super call.");
+        final var expr = finishCall(new Expr.Super(
+                        keyword, new Token(IDENTIFIER,
+                        "init", null, keyword.line()
+                ))
+        );
+        consume(SEMICOLON, "Expected ';' after constructor 'super' call.");
+        return new Stmt.InitSuper(keyword, expr);
     }
 
     private Stmt expressionStatement() {
@@ -403,7 +419,7 @@ class Parser {
         return expr;
     }
 
-    final Expr finishCall(Expr callee) {
+    final Expr.Call finishCall(Expr callee) {
         var arguments = new ArrayList<Expr>();
         if (!check(RIGHT_PAREN)) {
             do {

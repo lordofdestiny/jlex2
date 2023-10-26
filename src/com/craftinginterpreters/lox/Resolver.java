@@ -1,6 +1,8 @@
 package com.craftinginterpreters.lox;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
@@ -85,7 +87,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (currentClass == ClassType.NONE) {
             Lox.error(expr.keyword,
                     "Can't use 'super' outside of a class");
-        }else if(currentClass != ClassType.SUBCLASS) {
+        } else if (currentClass != ClassType.SUBCLASS) {
             Lox.error(expr.keyword,
                     "Can't use 'super' in a class with no superclass.");
         }
@@ -269,6 +271,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitInitSuperStmt(Stmt.InitSuper stmt) {
+        resolve(stmt.initSuper);
+        return null;
+    }
+
+    @Override
     public Void visitContinueStmt(Stmt.Continue stmt) {
         if (currentLoop != LoopType.LOOP) {
             Lox.error(stmt.keyword, "Can't use 'continue' outside a loop.");
@@ -337,10 +345,44 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
                 define(param);
             });
         }
+
+        resolveSuperInit(function.body);
+
         resolve(function.body);
         endScope();
         currentFunction = enclosingFunction;
     }
+
+    private void resolveSuperInit(List<Stmt> statements) {
+        final var list = statements.stream()
+                .filter((stmt) -> stmt instanceof Stmt.InitSuper)
+                .map(stmt -> (Stmt.InitSuper) stmt)
+                .collect(Collectors.toCollection(ArrayList<Stmt.InitSuper>::new));
+
+        statements.stream()
+                .filter(stmt -> stmt instanceof Stmt.Expression &&
+                                ((Stmt.Expression) stmt).expression instanceof Expr.Call &&
+                                ((Expr.Call) ((Stmt.Expression) stmt).expression).callee instanceof Expr.Super)
+                .map((stmt) -> ((Expr.Super) ((Expr.Call) ((Stmt.Expression) stmt).expression).callee).keyword)
+                .findAny()
+                .ifPresent((keyword) -> Lox.error(keyword,
+                        "Calling 'init' explicitly. Use 'super(...)' instead."));
+
+        if (currentFunction != FunctionType.INITIALIZER) {
+            list.forEach((stmt) ->
+                    Lox.error(stmt.keyword,
+                            "Using 'super' call outside of initializer")
+            );
+        } else if (!list.isEmpty() && list.get(0) != statements.get(0)) {
+            Lox.error(list.get(0).keyword,
+                    "Expected 'super' to be first statement in initializer.");
+        } else if (list.size() > 1) {
+            list.forEach((stmt) -> Lox.error(stmt.keyword,
+                    "Multiple uses of 'super' initializer forbidden."));
+
+        }
+    }
+
 
     private void declare(Token name) {
         if (scopes.isEmpty()) return;

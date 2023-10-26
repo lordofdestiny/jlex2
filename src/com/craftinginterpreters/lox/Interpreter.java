@@ -416,6 +416,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitInitSuperStmt(Stmt.InitSuper stmt) {
+        evaluate(stmt.initSuper);
+        return null;
+    }
+
+    @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         Object value = uninitialized;
         if (stmt.initializer != null) {

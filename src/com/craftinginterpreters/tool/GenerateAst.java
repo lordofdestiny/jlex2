@@ -51,6 +51,7 @@ public class GenerateAst {
         statements.put("If", "Expr condition, Stmt thanBranch, Stmt elseBranch");
         statements.put("Print", "Expr expression");
         statements.put("Return", "Token keyword, Expr value");
+        statements.put("InitSuper", "Token keyword, Expr.Call initSuper");
         statements.put("Var", "Token name, Expr initializer");
         statements.put("While", "Expr condition, Stmt body, Stmt forIncrement");
         return statements;
