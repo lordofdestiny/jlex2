@@ -325,6 +325,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitSuperExpr(Expr.Super expr) {
+        final var distance = locals.get(expr);
+        final var superclass = (LoxClass) environment.getAt(distance, 0);
+        final var object = (LoxInstance) environment.getAt(distance - 1, 0);
+
+        final var methodName = expr.method.lexeme();
+        final var method = superclass.findMethod(methodName)
+                .orElseThrow(()->new RuntimeError(expr.method,
+                        "Undefined property '" + methodName+ "'."));
+        return method.bind(object);
+    }
+
+    @Override
     public Object visitSetExpr(Expr.Set expr) {
         final var object = evaluate(expr.object);
 
@@ -433,6 +446,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         }
 
+        if (stmt.superclass != null) {
+            environment = new Environment(environment);
+            environment.define(superclass);
+        }
+
         final var classMethods = new HashMap<String, LoxFunction>();
         for (final var method : stmt.classMethod) {
             final var function = new LoxFunction(
@@ -442,6 +460,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             classMethods.put(function.name, function);
         }
         final var klass = getLoxClass(stmt, superclass, classMethods);
+        if (superclass != null) {
+            environment = environment.enclosing;
+        }
         define(stmt.name, klass);
         return null;
     }

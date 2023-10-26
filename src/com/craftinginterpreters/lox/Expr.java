@@ -12,6 +12,7 @@ abstract class Expr {
 		R visitConditionalExpr(Conditional expr);
 		R visitUnaryExpr(Unary expr);
 		R visitFunctionExpr(Function expr);
+		R visitSuperExpr(Super expr);
 		R visitGetExpr(Get expr);
 		R visitLiteralExpr(Literal expr);
 		R visitThisExpr(This expr);
@@ -133,6 +134,20 @@ abstract class Expr {
 
 		final List<Token> parameters;
 		final List<Stmt> body;
+	}
+	static class Super extends Expr{ 
+		Super(Token keyword, Token method) {
+			this.keyword = keyword;
+			this.method = method;
+		}
+
+		 @Override
+		 <R> R accept(Visitor<R> visitor) {
+			return visitor.visitSuperExpr(this);
+		}
+
+		final Token keyword;
+		final Token method;
 	}
 	static class Get extends Expr{ 
 		Get(Expr object, Token name) {

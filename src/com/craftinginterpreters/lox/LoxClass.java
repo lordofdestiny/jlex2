@@ -20,7 +20,10 @@ class LoxClass extends LoxInstance implements LoxCallable {
 
     Optional<LoxFunction> findMethod(String name) {
         return Optional.ofNullable(methods.getOrDefault(name, null))
-                .or(() -> Optional.ofNullable(methods.getOrDefault(name, null)));
+                .or(() -> Optional.ofNullable(superClass)
+                        .map(superClass -> superClass.methods)
+                        .map(methods -> methods.getOrDefault(name, null))
+                );
     }
 
     @Override

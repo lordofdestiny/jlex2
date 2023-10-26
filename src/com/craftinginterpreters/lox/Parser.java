@@ -427,6 +427,13 @@ class Parser {
         if (match(TRUE)) return new Expr.Literal(true);
         if (match(NIL)) return new Expr.Literal(null);
         if (match(NUMBER, STRING)) return new Expr.Literal(previous().literal());
+        if (match(SUPER)) {
+            final var keyword = previous();
+            consume(DOT, "Expect '.' after 'super'");
+            final var method = consume(IDENTIFIER,
+                    "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
+        }
         if (match(THIS)) return new Expr.This(previous());
         if (match(IDENTIFIER)) return new Expr.Variable(previous());
 
